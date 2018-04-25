@@ -4,7 +4,10 @@
 pip install tweepy<br />
 pip install pykafka<br />
 pip install newsapi-python<br />
-pip install matplotlib
+pip install matplotlib<br />
+pip install -U textblob<br />
+export NLTK_DATA=<directory> (optional, if you wish to install nltk data in a different directory other than root)<br />
+python -m textblob.download_corpora
 
 ## Run
 Start Zookeeper server<br />
