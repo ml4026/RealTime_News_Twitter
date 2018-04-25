@@ -6,4 +6,8 @@ pip install pykafka<br />
 pip install newsapi-python<br />
 pip install matplotlib
 
-
+## Run
+Start Zookeeper server<br />
+<Kafka path>/bin/zookeeper-server-start.sh config/zookeeper.properties
+Start Kafka server
+<Kafka path>/bin/kafka-server-start.sh config/server.properties
