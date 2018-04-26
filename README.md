@@ -14,6 +14,6 @@ Start Zookeeper server<br />
 <Kafka path>/bin/zookeeper-server-start.sh config/zookeeper.properties<br />
 Start Kafka server<br />
 <Kafka path>/bin/kafka-server-start.sh config/server.properties<br />
-Run KafkaListener<br />
-Run Spark Stream Processing Program<br />
+Run Listener.py (Python 3 needed)<br />
+Run Processing Program<br />
 <Spark path>/bin/spark-submit --packages org.apache.spark:spark-streaming-kafka-0-8_2.11:<Spark version> <program path><br />
