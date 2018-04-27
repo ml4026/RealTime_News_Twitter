@@ -11,7 +11,7 @@ from nltk.corpus import stopwords
 from nltk import sent_tokenize, ne_chunk, pos_tag, word_tokenize
 
 #News API AUTH
-client = NewsApiClinet(api_key = apikey)
+client = NewsApiClient(api_key = apikey)
 
 #TWITTER API AUTH
 auth = OAuthHandler(consumer_key, consumer_secret)
@@ -47,25 +47,26 @@ while True:
 	headlines = client.get_top_headlines(language = 'en', country = 'us')
 	titles = []
 	for article in headlines['articles']:
-    		temp_title = article['title'].encode('ascii', 'ignore')
-    		print temp_title
+    		temp_title = article['title'].encode('ascii', 'ignore').decode('ascii')
+    		print(temp_title)
     		titles.append(temp_title)
-	titles = titles[:3]
+	#titles = titles[:3]
 
 	keywords = []
 	for text in titles:    
     		for sent in sent_tokenize(text):
         		for chunk in ne_chunk(pos_tag(word_tokenize(sent))):
             			if hasattr(chunk, 'label'):
-                			if chunk.label() == 'PERSON' or chunk.label() == 'ORGANIZATION':
+                			if chunk.label() == 'PERSON' or chunk.label() == 'ORGANIZATION' or chunk.label() == 'LOCATION':
                     				keywords.append(' '.join(c[0] for c in chunk.leaves()))
-	print keywords
+	print(keywords)
 
 	if twitter_stream.running is True:
 		twitter_stream.disconnect()
+		time.sleep(5)
 
-	if !keywords:
-		print('no keyworkds to listen to')
+	if not keywords:
+		print('no keywords to listen to')
 	else:
-		twitter_stream.filter(track = keywords, async = True)
-	time.sleep(90)
+		twitter_stream.filter(track = keywords, languages = ['en'], async = True)
+	time.sleep(115)

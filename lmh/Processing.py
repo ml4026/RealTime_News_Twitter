@@ -18,42 +18,15 @@ from pyspark.streaming.kafka import KafkaUtils
 import json
 from operator import add
 from textblob import TextBlob
+import re
+from time import sleep
 import matplotlib.pyplot as plt
 
-def make_plot(counts):
-    """
-    This function plots the counts of positive and negative words for each timestep.
-    """
-    positiveCounts = []
-    negativeCounts = []
-    time = []
-
-    for val in counts:
-        positiveTuple = val[0]
-        positiveCounts.append(positiveTuple[1])
-        negativeTuple = val[1]
-        negativeCounts.append(negativeTuple[1])
-
-    for i in range(len(counts)):
-        time.append(i)
-
-    posLine = plt.plot(time, positiveCounts,'bo-', label='Positive')
-    negLine = plt.plot(time, negativeCounts,'go-', label='Negative')
-    plt.axis([0, len(counts), 0, max(max(positiveCounts), max(negativeCounts))+50])
-    plt.xlabel('Time step')
-    plt.ylabel('Word count')
-    plt.legend(loc = 'upper left')
-    plt.show()
-
-def makePlot(sentiment_list):
-    sentiment_count = [0] * 3
-    sentiment_count[sentiment_list[0]] = sentiment_list[1]
-    sentiment_count[sentiment_list[2]] = sentiment_list[3]
-    sentiment_count[sentiment_list[4]] = sentiment_list[5]
-    plt.figure()
-    plt.plot(sentiment_count)
-    plt.savefig('img_lib/count.png')
-    plt.close()
+def parseText(line):
+    if 'text' in line:
+        return line['text']
+    else:
+        return ' '
 
 def clean_tweet(tweet):
     '''
@@ -75,26 +48,56 @@ def analize_sentiment(tweet):
     else:
         return -1
 
-def sendRecord(record):
-    connection = createNewConnection()
-    connection.send(record)
-    connection.close()
+def cumu(newvalue, count):
+    if count is None:
+        count = 0
+    return sum(newvalue, count)
 
-if __name__ == "__main__":
-    '''
-    path = '/home/lmh/Downloads/temp/'
-
-    '''
+def Stream():
     sc = SparkContext(appName = 'NewsTwitter')
     ssc = StreamingContext(sc, 10)
+    ssc.checkpoint('checkpoint')
     kafkaStream = KafkaUtils.createStream(ssc, 'localhost:2181', 'spark-streaming', {'twitter':1})
-    parsed = kafkaStream.map(lambda v: json.loads(v[1])).map(lambda line: line['text'])
-    sentiment = parsed.map(lambda tweet: (analize_sentiment(tweet), 1))
-    sentiment_list = sentiment.reduceByKey(add).map(lambda x, y: [x, y]).reduce(x, y: x + y)
-    sentiment_list.map(makePlot)
+
+    parsed = kafkaStream.map(lambda v: json.loads(v[1])).map(parseText)
+    parsed.cache()
+    tweets_saver = parsed.map(lambda tweet: tweet + '\n').reduce(lambda x, y: x + y)
+    tweets_saver.saveAsTextFiles('file:///home/lmh/Downloads/temp/lmh/text/tweets/t')
+    sentiment = parsed.map(lambda tweet: [analize_sentiment(tweet), 1])
+    sentiment_count = sentiment.reduceByKey(add)
+    sentiment_count.cache()
+    sentiment_count.saveAsTextFiles('file:///home/lmh/Downloads/temp/lmh/text/sentiment/s')
+    sentiment_count.pprint()
+    sentiment_fig_data = sentiment_count.updateStateByKey(cumu)
+
+    counts = []
+    sentiment_fig_data.foreachRDD(lambda s, rdd: counts.append(rdd.collect()))
 
     ssc.start()
-    ssc.awaitTerminationOrTimeout(30)
+    ssc.awaitTerminationOrTimeout(60)
     ssc.stop(stopGraceFully = True)
 
+    return counts
 
+def make_plot(count):
+    s_final = count[-1]
+    s_list = [0] * 3
+    for k, v in s_final:
+        s_list[k] = v
+
+    plt.figure()
+    plt.plot(s_list)
+    plt.savefig(img_path + 'stat.png')
+    plt.close()
+
+if __name__ == "__main__":
+
+    img_path = '/home/lmh/Downloads/temp/lmh/img/'
+
+    while True:
+        count = Stream()
+        make_plot(count)
+        sleep(10)
+
+
+ 
