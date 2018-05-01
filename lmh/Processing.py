@@ -85,8 +85,9 @@ def make_plot(count):
     for k, v in s_final:
         s_list[k] = v
 
+    s_list.reverse()
     plt.figure()
-    plt.plot(s_list)
+    plt.plot([-1, 0, 1], s_list)
     plt.savefig(img_path + 'stat.png')
     plt.close()
 
